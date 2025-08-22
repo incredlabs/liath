@@ -22,26 +22,45 @@ class RocksDBStorage(StorageBase):
 
             opts.compression = rocksdb.CompressionType.lz4_compression
             opts.compaction_style = rocksdb.CompactionStyle.level
-        self.db = rocksdb.DB(path, options)
+        self.db = rocksdb.DB(path, opts)
         self.column_families = {}
 
     def get(self, key):
-        return self.db.get(key)
+        if isinstance(key, str):
+            key = key.encode('utf-8')
+        result = self.db.get(key)
+        return result.decode('utf-8') if result else None
 
     def put(self, key, value):
+        if isinstance(key, str):
+            key = key.encode('utf-8')
+        if isinstance(value, str):
+            value = value.encode('utf-8')
         return self.db.put(key, value)
 
     def delete(self, key):
+        if isinstance(key, str):
+            key = key.encode('utf-8')
         return self.db.delete(key)
 
     def iterator(self):
-        return self.db.iteritems()
+        iter = self.db.iteritems()
+        iter.seek_to_first()
+        items = []
+        for key, value in iter:
+            items.append({key.decode('utf-8'): value.decode('utf-8')})
+        return items
 
     def write_batch(self, operations):
         batch = rocksdb.WriteBatch()
         for op in operations:
+            if isinstance(op['key'], str):
+                op['key'] = op['key'].encode('utf-8')
             if op['type'] == 'put':
-                batch.put(op['key'], op['value'])
+                value = op['value']
+                if isinstance(value, str):
+                    value = value.encode('utf-8')
+                batch.put(op['key'], value)
             elif op['type'] == 'delete':
                 batch.delete(op['key'])
         return self.db.write(batch)
@@ -60,20 +79,33 @@ class RocksDBStorage(StorageBase):
 
     def get_cf(self, cf_name, key):
         if cf_name in self.column_families:
-            return self.db.get(key, column_family=self.column_families[cf_name])
+            if isinstance(key, str):
+                key = key.encode('utf-8')
+            result = self.db.get(key, column_family=self.column_families[cf_name])
+            return result.decode('utf-8') if result else None
         raise ValueError(f"Column family '{cf_name}' not found")
 
     def put_cf(self, cf_name, key, value):
         if cf_name in self.column_families:
+            if isinstance(key, str):
+                key = key.encode('utf-8')
+            if isinstance(value, str):
+                value = value.encode('utf-8')
             return self.db.put(key, value, column_family=self.column_families[cf_name])
         raise ValueError(f"Column family '{cf_name}' not found")
 
     def delete_cf(self, cf_name, key):
         if cf_name in self.column_families:
+            if isinstance(key, str):
+                key = key.encode('utf-8')
             return self.db.delete(key, column_family=self.column_families[cf_name])
         raise ValueError(f"Column family '{cf_name}' not found")
 
     def compact_range(self, begin, end):
+        if isinstance(begin, str):
+            begin = begin.encode('utf-8')
+        if isinstance(end, str):
+            end = end.encode('utf-8')
         return self.db.compact_range(begin, end)
 
     def flush(self):

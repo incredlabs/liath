@@ -1,21 +1,32 @@
 import unittest
 import json
+import sys
+import os
+import tempfile
+import shutil
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+
 from database import Database
 from storage.rocksdb_storage import RocksDBStorage
 from storage.leveldb_storage import LevelDBStorage
-import os
 
 class TestLiathDatabase(unittest.TestCase):
     def setUp(self):
-        if not os.path.exists('./test_data'):
-            os.makedirs('./test_data')
-        self.db = Database(data_dir='./test_data', storage_type='leveldb')
+        # Create a temporary directory for test data
+        self.test_dir = tempfile.mkdtemp()
+        self.plugins_dir = os.path.join(os.path.dirname(__file__), '..', 'plugins')
+        # Create plugins directory if it doesn't exist
+        if not os.path.exists(self.plugins_dir):
+            os.makedirs(self.plugins_dir)
+        self.db = Database(data_dir=self.test_dir, plugins_dir=self.plugins_dir, storage_type='leveldb')
         self.db.create_namespace('test_namespace')
 
     def tearDown(self):
+        # Close the database before removing the directory
+        if hasattr(self, 'db'):
+            self.db.close()
         # Clean up test data
-        import shutil
-        shutil.rmtree('./test_data')
+        shutil.rmtree(self.test_dir, ignore_errors=True)
 
     def execute_query(self, query):
         result = self.db.execute_query('test_namespace', query)
@@ -80,12 +91,15 @@ class TestLiathDatabase(unittest.TestCase):
         self.assertIn({'iter_key3': 'iter_value3'}, iterator_result)
 
     def test_write_batch(self):
+        # Convert the batch operations to a Lua-compatible format
         batch_ops = [
             {"type": "put", "key": "batch_key1", "value": "batch_value1"},
             {"type": "put", "key": "batch_key2", "value": "batch_value2"},
             {"type": "delete", "key": "batch_key1"}
         ]
-        self.execute_query(f"db:write_batch({json.dumps(batch_ops)})")
+        # Convert to JSON and then to a format that can be used in Lua
+        batch_ops_json = json.dumps(batch_ops)
+        self.execute_query(f"db:write_batch(require('cjson').decode('{batch_ops_json}'))")
 
         result1 = self.execute_query("return db:get('batch_key1')")
         result2 = self.execute_query("return db:get('batch_key2')")
