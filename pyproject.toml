@@ -1,9 +1,23 @@
 [tool.poetry]
 name = "liath"
 version = "0.1.0"
-description = ""
+description = "An AI-powered database system with key-value storage, vector search, and AI capabilities"
 authors = ["Dipankar Sarkar <me@dipankar.name>"]
 readme = "README.md"
+license = "MIT"
+repository = "https://github.com/nudgelang/liath"
+keywords = ["database", "ai", "llm", "key-value", "lua", "vector-search"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Database :: Database Engines/Servers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -15,12 +29,20 @@ fastembed = "^0.3.4"
 psutil = "^6.0.0"
 usearch = "^2.13.0"
 flask-smorest = "^0.44.0"
+pytest = "^8.4.1"
+lupa = "^2.5"
+plyvel = "^1.5.1"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
 
 [tool.poetry.scripts]
-server = 'liath.server:run_server'
-cli = 'liath.cli:main'
+liath-server = 'liath.server:run_server'
+liath-cli = 'liath.cli_entry:main'
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.extras]
+rocksdb = ["rocksdb"]

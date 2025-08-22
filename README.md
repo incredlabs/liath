@@ -2,6 +2,9 @@
 
 > Liath is a next-generation database system that combines the power of key-value storage, vector search, and AI capabilities into one flexible platform. Built on RocksDB/LevelDB with Lua as its query language, it's designed for developers who want to build AI-powered applications quickly and efficiently.
 
+[![PyPI version](https://badge.fury.io/py/liath.svg)](https://badge.fury.io/py/liath)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## ✨ Key Features
 
 Liath comes packed with powerful features to help you build AI-powered applications. Here's a quick overview:
@@ -26,6 +29,12 @@ Liath comes packed with powerful features to help you build AI-powered applicati
 
 ## 🛠️ Installation
 
+### As a Library
+```bash
+pip install liath
+```
+
+### From Source
 1. **Prerequisites**
    - Python 3.11 or higher
    - Poetry package manager
@@ -52,16 +61,40 @@ Liath comes packed with powerful features to help you build AI-powered applicati
    ./liath/setup_luarocks.sh
    ```
 
-## 🚀 Quick Start
+## 📦 Usage
+
+### As a Library (Embedded Mode)
+```python
+from liath import EmbeddedLiath
+
+# Create an embedded database instance
+db = EmbeddedLiath(data_dir="./my_data", storage_type="auto")
+
+# Basic operations
+db.put("key", "value")
+retrieved_value = db.get("key")
+print(retrieved_value)  # Output: value
+
+# Execute Lua queries
+result = db.execute_lua('return db:get("key")')
+print(result)  # Output: value
+
+# Switch namespaces
+db.set_namespace("my_namespace")
+db.put("namespaced_key", "namespaced_value")
+
+# Close the database when done
+db.close()
+```
 
 ### CLI Mode
 ```bash
-poetry run cli --storage auto
+liath-cli --storage auto
 ```
 
 ### Server Mode
 ```bash
-poetry run server --storage auto --host 0.0.0.0 --port 5000
+liath-server --storage auto --host 0.0.0.0 --port 5000
 ```
 
 ### Basic Operations
@@ -114,12 +147,112 @@ Choose your storage backend based on your needs:
 | Column Families | ✅ | ❌ |
 | Complexity | Medium | Low |
 
+## 🔧 API Reference
+
+### EmbeddedLiath Class
+
+The `EmbeddedLiath` class provides a Pythonic interface for interacting with the database.
+
+#### Constructor
+```python
+db = EmbeddedLiath(data_dir="./data", storage_type="auto")
+```
+
+Parameters:
+- `data_dir` (str): Directory to store database files
+- `storage_type` (str): Storage backend ('auto', 'rocksdb', or 'leveldb')
+
+#### Methods
+
+##### `put(key, value)`
+Store a key-value pair in the database.
+
+##### `get(key)`
+Retrieve a value from the database.
+
+##### `delete(key)`
+Delete a key-value pair from the database.
+
+##### `execute_lua(query)`
+Execute a Lua query.
+
+##### `set_namespace(namespace)`
+Switch to a different namespace.
+
+##### `create_user(username, password)`
+Create a new user.
+
+##### `authenticate_user(username, password)`
+Authenticate a user.
+
+##### `list_namespaces()`
+List all namespaces.
+
+##### `close()`
+Close the database connection.
+
+### Direct Database Access
+
+For more advanced usage, you can access the underlying `Database` class directly:
+
+```python
+from liath import Database
+
+db = Database(data_dir="./data", storage_type="auto")
+# ... use database methods directly
+```
+
 ## 🧩 Extending Liath
 
 Create custom plugins by:
 1. Adding a new Python file in `plugins/`
 2. Inheriting from `PluginBase`
 3. Implementing required methods
+
+### Example Plugin
+```python
+from liath.plugin_base import PluginBase
+
+class MyPlugin(PluginBase):
+    @property
+    def name(self):
+        return "myplugin"
+
+    def initialize(self, context):
+        self.namespace = context['namespace']
+
+    def get_lua_interface(self):
+        return {
+            'my_function': self.lua_callable(self.my_function)
+        }
+
+    def my_function(self, arg1, arg2):
+        # Your plugin logic here
+        return f"Processed {arg1} and {arg2}"
+```
+
+## 📦 Using LuaRocks Packages
+
+Liath supports LuaRocks packages in your queries. Here's how:
+
+1. **Install a Package**
+   ```bash
+   luarocks install --tree=./data/namespaces/your_namespace package_name
+   ```
+
+2. **Use in Queries**
+   ```lua
+   local json = db:require("cjson")
+   return json.encode({key = "value"})
+   ```
+
+### Example: HTTP Requests with LuaSocket
+
+```lua
+local http = db:require("socket.http")
+local body, code = http.request("http://example.com")
+return {body = body, status_code = code}
+```
 
 ## 🤝 Contributing
 
