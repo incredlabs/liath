@@ -5,7 +5,7 @@ description = "An AI-powered database system with key-value storage, vector sear
 authors = ["Dipankar Sarkar <me@dipankar.name>"]
 readme = "README.md"
 license = "MIT"
-repository = "https://github.com/nudgelang/liath"
+repository = "https://github.com/skelf-research/liath"
 keywords = ["database", "ai", "llm", "key-value", "lua", "vector-search"]
 classifiers = [
     "Development Status :: 3 - Alpha",
