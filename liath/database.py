@@ -5,9 +5,17 @@ import os
 import threading
 import importlib.util
 import inspect
-from plugin_base import PluginBase
-from storage.rocksdb_storage import RocksDBStorage
-from storage.leveldb_storage import LevelDBStorage
+import sys
+import tempfile
+import shutil
+import subprocess
+
+# Add the parent directory to the path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from liath.plugin_base import PluginBase
+from liath.storage.rocksdb_storage import RocksDBStorage
+from liath.storage.leveldb_storage import LevelDBStorage
 
 class Database:
     def __init__(self, data_dir='./data', plugins_dir='./plugins', storage_type='auto'):
@@ -150,9 +158,10 @@ class Database:
             """
             
             lua.execute(setup_script)
-            # Add the plugin interfaces to the Lua environment
-            for name, func in lua_env.items():
-                lua.globals()[name] = func
+            
+            # Add the database and plugins to the Lua environment
+            lua.globals()['db'] = self.namespaces[namespace]['db']
+            lua.globals()['plugins'] = lua_env
 
             # Execute the Lua query
             # Wrap the query in a function and return its result
