@@ -1,4 +1,4 @@
-from plugin_base import PluginBase
+from liath.plugin_base import PluginBase
 from usearch.index import Index, Matches
 import json
 import numpy as np

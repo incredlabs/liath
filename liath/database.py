@@ -5,21 +5,20 @@ import os
 import threading
 import importlib.util
 import inspect
-import sys
 import tempfile
 import shutil
 import subprocess
-
-# Add the parent directory to the path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+import hashlib
+import binascii
 
 from liath.plugin_base import PluginBase
 from liath.storage.rocksdb_storage import RocksDBStorage
 from liath.storage.leveldb_storage import LevelDBStorage
 
 class Database:
-    def __init__(self, data_dir='./data', plugins_dir='./plugins', storage_type='auto'):
+    def __init__(self, data_dir='./data', plugins_dir=None, storage_type='auto'):
         self.data_dir = data_dir
+        # User-provided plugins directory (optional)
         self.plugins_dir = plugins_dir
         self.namespaces = {}
         self.metadata_file = os.path.join(data_dir, 'metadata.json')
@@ -38,56 +37,58 @@ class Database:
             raise ValueError("Invalid storage_type. Choose 'auto', 'rocksdb', or 'leveldb'")
 
         self.auth_db = self.StorageClass(os.path.join(data_dir, "auth.db"))
-        self.lua = LuaRuntime(unpack_returned_tuples=True)
-        self._setup_lua_environment()
+        # Load plugins from packaged location and optional user directory
         self.plugins = self.load_plugins()
         self.load_metadata()
 
-    def _setup_lua_environment(self):
-        lua = LuaRuntime(unpack_returned_tuples=True)
-        
-        # Set up the Lua package path to include LuaRocks packages
-        setup_script = """
-        local home = os.getenv("HOME")
-        local lua_version = _VERSION:match("%d+%.%d+")
-        package.path = package.path .. ";" .. home .. "/.luarocks/share/lua/" .. lua_version .. "/?.lua"
-        package.path = package.path .. ";" .. home .. "/.luarocks/share/lua/" .. lua_version .. "/?/init.lua"
-        package.cpath = package.cpath .. ";" .. home .. "/.luarocks/lib/lua/" .. lua_version .. "/?.so"
-        
-        -- Add the namespace-specific LuaRocks path
-        local function add_namespace_path(namespace)
-            local ns_path = "NAMESPACE_PATH/" .. namespace
+    def _configure_lua_paths(self, lua: LuaRuntime, namespace: str):
+        # Configure Lua package paths to include user-level luarocks and namespace-specific tree
+        setup_script = f"""
+            local home = os.getenv("HOME")
+            local lua_version = _VERSION:match("%d+%.%d+")
+            package.path = package.path .. ";" .. home .. "/.luarocks/share/lua/" .. lua_version .. "/?.lua"
+            package.path = package.path .. ";" .. home .. "/.luarocks/share/lua/" .. lua_version .. "/?/init.lua"
+            package.cpath = package.cpath .. ";" .. home .. "/.luarocks/lib/lua/" .. lua_version .. "/?.so"
+
+            local ns_path = "{os.path.join(self.data_dir, 'namespaces', namespace)}"
             package.path = package.path .. ";" .. ns_path .. "/share/lua/" .. lua_version .. "/?.lua"
             package.path = package.path .. ";" .. ns_path .. "/share/lua/" .. lua_version .. "/?/init.lua"
             package.cpath = package.cpath .. ";" .. ns_path .. "/lib/lua/" .. lua_version .. "/?.so"
-        end
-        
-        -- Expose the add_namespace_path function to Python
-        return add_namespace_path
         """
-        
-        # Replace NAMESPACE_PATH with the actual path to your namespaces
-        setup_script = setup_script.replace("NAMESPACE_PATH", os.path.join(self.data_dir, "namespaces"))
-        
-        # Execute the setup script and get the add_namespace_path function
-        self.add_namespace_path = lua.execute(setup_script)
-        
-        return lua
+        lua.execute(setup_script)
 
     def load_plugins(self):
         plugins = {}
-        for filename in os.listdir(self.plugins_dir):
-            if filename.endswith('.py'):
-                module_name = filename[:-3]
-                module_path = os.path.join(self.plugins_dir, filename)
+        candidate_dirs = []
+        # Packaged plugins directory
+        packaged_dir = os.path.join(os.path.dirname(__file__), 'plugins')
+        if os.path.isdir(packaged_dir):
+            candidate_dirs.append(packaged_dir)
+        # Optional user-provided directory
+        if self.plugins_dir and os.path.isdir(self.plugins_dir):
+            candidate_dirs.append(self.plugins_dir)
+
+        for d in candidate_dirs:
+            for filename in os.listdir(d):
+                if not filename.endswith('.py'):
+                    continue
+                module_name = f"liath_user_plugin_{filename[:-3]}_{abs(hash(d))}"
+                module_path = os.path.join(d, filename)
                 spec = importlib.util.spec_from_file_location(module_name, module_path)
                 module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                
-                for name, obj in inspect.getmembers(module):
+                try:
+                    spec.loader.exec_module(module)  # type: ignore
+                except Exception:
+                    # Skip faulty plugins silently to avoid breaking core
+                    continue
+
+                for _, obj in inspect.getmembers(module):
                     if inspect.isclass(obj) and issubclass(obj, PluginBase) and obj is not PluginBase:
-                        plugin = obj()
-                        plugins[plugin.name] = plugin
+                        try:
+                            plugin = obj()
+                            plugins[plugin.name] = plugin
+                        except Exception:
+                            continue
         return plugins
 
     def load_metadata(self):
@@ -95,7 +96,7 @@ class Database:
             with open(self.metadata_file, 'r') as f:
                 metadata = json.load(f)
                 for name, info in metadata.items():
-                    self.create_namespace(name, info['packages'])
+                    self.create_namespace(name, info.get('packages'))
         else:
             self.create_namespace('default')
 
@@ -113,8 +114,13 @@ class Database:
                 'packages': set(packages or []),
             }
             self.save_metadata()
-
-            self.add_namespace_path(name)
+            # Ensure namespace LuaRocks tree exists
+            ns_root = os.path.join(self.data_dir, 'namespaces', name)
+            for p in [
+                os.path.join(ns_root, 'share', 'lua'),
+                os.path.join(ns_root, 'lib', 'lua'),
+            ]:
+                os.makedirs(p, exist_ok=True)
        
     def execute_query(self, namespace, query, return_format='dict'):
         if namespace not in self.namespaces:
@@ -127,41 +133,20 @@ class Database:
                 'packages': self.namespaces[namespace]['packages'],
                 'data_dir': self.data_dir
             }
-            
-            # Initialize plugins and add their interfaces to the Lua environment
-            lua_env = {}
+
+            # Initialize plugins and build plugins table for Lua
+            plugins_table = {}
             for plugin in self.plugins.values():
                 plugin.initialize(context)
-                lua_env.update(plugin.get_lua_interface())
+                plugins_table[plugin.name] = plugin.get_lua_interface()
 
-            import sys
-            orig_dlflags = sys.getdlopenflags()
-            sys.setdlopenflags(258)
-            
-            import lupa
-            sys.setdlopenflags(orig_dlflags)
+            # Create Lua runtime and configure paths
+            lua = LuaRuntime(unpack_returned_tuples=True)
+            self._configure_lua_paths(lua, namespace)
 
-            lua = lupa.LuaRuntime(unpack_returned_tuples=True)
-
-            # Set up the Lua package path for this namespace
-            setup_script = f"""
-                local home = os.getenv("HOME")
-                local lua_version = _VERSION:match("%d+%.%d+")
-                package.path = package.path .. ";" .. home .. "/.luarocks/share/lua/" .. lua_version .. "/?.lua"
-                package.path = package.path .. ";" .. home .. "/.luarocks/share/lua/" .. lua_version .. "/?/init.lua"
-                package.cpath = package.cpath .. ";" .. home .. "/.luarocks/lib/lua/" .. lua_version .. "/?.so"
-                
-                local ns_path = "{os.path.join(self.data_dir, 'namespaces', namespace)}"
-                package.path = package.path .. ";" .. ns_path .. "/share/lua/" .. lua_version .. "/?.lua"
-                package.path = package.path .. ";" .. ns_path .. "/share/lua/" .. lua_version .. "/?/init.lua"
-                package.cpath = package.cpath .. ";" .. ns_path .. "/lib/lua/" .. lua_version .. "/?.so"
-            """
-            
-            lua.execute(setup_script)
-            
-            # Add the database and plugins to the Lua environment
+            # Expose database and plugins as Lua globals
             lua.globals()['db'] = self.namespaces[namespace]['db']
-            lua.globals()['plugins'] = lua_env
+            lua.globals()['plugins'] = plugins_table
 
             # Execute the Lua query
             # Wrap the query in a function and return its result
@@ -173,7 +158,7 @@ class Database:
             """
 
             # Execute the Lua query
-            result = lua.execute(wrapped_query)         
+            result = lua.execute(wrapped_query)
 
             return self._format_result(result, return_format)
 
@@ -218,13 +203,33 @@ class Database:
         return markdown
 
     def authenticate_user(self, username, password):
-        stored_password = self.auth_db.get(username.encode())
-        return stored_password == password.encode()
+        stored = self.auth_db.get(username)
+        if stored is None:
+            return False
+        # Support legacy plaintext entries
+        if not isinstance(stored, str):
+            try:
+                stored = stored.decode('utf-8')
+            except Exception:
+                pass
+        if stored and not stored.startswith('v1$'):
+            return stored == password
+        try:
+            _, salt_hex, hash_hex = stored.split('$', 2)
+            salt = binascii.unhexlify(salt_hex)
+            expected = binascii.unhexlify(hash_hex)
+            dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 200_000)
+            return dk == expected
+        except Exception:
+            return False
 
     def create_user(self, username, password):
-        if self.auth_db.get(username.encode()) is not None:
+        if self.auth_db.get(username) is not None:
             raise ValueError("User already exists")
-        self.auth_db.put(username.encode(), password.encode())
+        salt = os.urandom(16)
+        dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 200_000)
+        value = 'v1$' + binascii.hexlify(salt).decode('ascii') + '$' + binascii.hexlify(dk).decode('ascii')
+        self.auth_db.put(username, value)
 
     def list_namespaces(self):
         return list(self.namespaces.keys())
@@ -232,19 +237,17 @@ class Database:
     def install_package(self, namespace, package):
         if namespace not in self.namespaces:
             raise ValueError(f"Namespace '{namespace}' does not exist")
-        
+        ns_root = os.path.join(self.data_dir, 'namespaces', namespace)
         with tempfile.TemporaryDirectory() as temp_dir:
             try:
                 subprocess.run(['luarocks', 'install', package, f'--tree={temp_dir}'], check=True)
-                dest_dir = os.path.join(self.data_dir, namespace, 'luarocks')
-                os.makedirs(dest_dir, exist_ok=True)
-                for item in os.listdir(temp_dir):
-                    s = os.path.join(temp_dir, item)
-                    d = os.path.join(dest_dir, item)
+                # Copy only lib/ and share/ trees
+                for sub in ('lib', 'share'):
+                    s = os.path.join(temp_dir, sub)
                     if os.path.isdir(s):
+                        d = os.path.join(ns_root, sub)
+                        os.makedirs(d, exist_ok=True)
                         shutil.copytree(s, d, dirs_exist_ok=True)
-                    else:
-                        shutil.copy2(s, d)
                 self.namespaces[namespace]['packages'].add(package)
                 self.save_metadata()
                 return True

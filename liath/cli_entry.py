@@ -6,12 +6,6 @@ This module provides a command-line interface for interacting with the Liath dat
 """
 
 import argparse
-import sys
-import os
-
-# Add the parent directory to the path so we can import liath
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
 from liath import DatabaseCLI
 
 
@@ -22,13 +16,13 @@ def main():
                         help="Specify the storage backend to use")
     parser.add_argument('--data-dir', default='./data',
                         help="Specify the data directory")
-    parser.add_argument('--plugins-dir', default='./plugins',
-                        help="Specify the plugins directory")
+    parser.add_argument('--plugins-dir', default=None,
+                        help="Specify an additional plugins directory")
     
     args = parser.parse_args()
     
     try:
-        cli = DatabaseCLI(storage_type=args.storage)
+        cli = DatabaseCLI(storage_type=args.storage, data_dir=args.data_dir, plugins_dir=args.plugins_dir)
         cli.cmdloop()
     except KeyboardInterrupt:
         print("\nGoodbye!")

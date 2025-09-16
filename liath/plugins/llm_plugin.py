@@ -1,4 +1,4 @@
-from plugin_base import PluginBase
+from liath.plugin_base import PluginBase
 from llama_cpp import Llama
 import openai
 import os

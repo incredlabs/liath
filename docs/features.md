@@ -1,8 +1,8 @@
-# Liath Features Documentation
+# Liath Features
 
-This document provides detailed information about Liath's key features and capabilities.
+This document describes Liath’s key capabilities at a glance.
 
-## 🔌 Pluggable Storage
+## Pluggable Storage
 
 Liath supports multiple storage backends, allowing you to choose the one that best fits your needs:
 
@@ -20,7 +20,7 @@ Liath supports multiple storage backends, allowing you to choose the one that be
 - Easier deployment
 - Basic key-value operations
 
-## 📝 Lua Query Language
+## Lua Query Language
 
 Liath uses Lua as its query language, providing:
 
@@ -30,7 +30,7 @@ Liath uses Lua as its query language, providing:
 - Support for complex data structures
 - Error handling and debugging capabilities
 
-## 🧩 Plugin Architecture
+## Plugin Architecture
 
 Extend Liath's functionality through plugins:
 
@@ -40,7 +40,7 @@ Extend Liath's functionality through plugins:
 - Add authentication providers
 - Create custom monitoring solutions
 
-## 🔍 Vector Search
+## Vector Search
 
 Built-in vector database capabilities:
 
@@ -50,7 +50,7 @@ Built-in vector database capabilities:
 - Integration with embedding models
 - Custom distance metrics
 
-## 🤖 AI Integration
+## AI Integration
 
 Direct access to language models:
 
@@ -61,7 +61,7 @@ Direct access to language models:
 - Code generation
 - Custom model integration
 
-## 📊 Embedding Generation
+## Embedding Generation
 
 Create and manage text embeddings:
 
@@ -71,7 +71,7 @@ Create and manage text embeddings:
 - Caching support
 - Integration with vector search
 
-## 📁 File Operations
+## File Operations
 
 Built-in file storage and retrieval:
 
@@ -81,7 +81,7 @@ Built-in file storage and retrieval:
 - Streaming support
 - Compression options
 
-## 🏷️ Namespaces
+## Namespaces
 
 Isolate data and operations:
 
@@ -91,7 +91,7 @@ Isolate data and operations:
 - Access control
 - Resource limits
 
-## 💾 Transaction Support
+## Transaction Support
 
 ACID compliant transactions (RocksDB):
 
@@ -101,7 +101,7 @@ ACID compliant transactions (RocksDB):
 - Durability
 - Rollback support
 
-## 🔐 User Authentication
+## User Authentication
 
 Secure user management:
 
@@ -111,7 +111,7 @@ Secure user management:
 - Session management
 - API key support
 
-## 🌐 CLI & HTTP API
+## CLI and HTTP API
 
 Multiple ways to interact:
 
@@ -129,7 +129,7 @@ Multiple ways to interact:
 - Rate limiting
 - CORS support
 
-## 💾 Backup & Restore
+## Backup and Restore
 
 Data protection features:
 
@@ -139,7 +139,7 @@ Data protection features:
 - Backup verification
 - Automated scheduling
 
-## ⚡ Query Caching
+## Query Caching
 
 Performance optimization:
 
@@ -149,7 +149,7 @@ Performance optimization:
 - Cache statistics
 - Custom cache policies
 
-## 📈 Monitoring
+## Monitoring
 
 System performance tracking:
 
@@ -159,7 +159,7 @@ System performance tracking:
 - Custom metrics
 - Alerting system
 
-## 🔄 Connection Pooling
+## Connection Pooling
 
 High concurrency support:
 
@@ -171,8 +171,4 @@ High concurrency support:
 
 ## Getting Started
 
-To learn more about implementing these features, check out our [examples](examples/) directory and [documentation](docs/).
-
-## Contributing
-
-We welcome contributions to improve these features! See our [contributing guide](CONTRIBUTING.md) for more information. 
+See the project README and additional documents under `docs/`.

@@ -1,267 +1,169 @@
-# 🚀 Liath: Your AI-Powered Database System
+# Liath
 
-> Liath is a next-generation database system that combines the power of key-value storage, vector search, and AI capabilities into one flexible platform. Built on RocksDB/LevelDB with Lua as its query language, it's designed for developers who want to build AI-powered applications quickly and efficiently.
+Liath is a programmable key–value database with Lua as its query language and a pluggable architecture for storage and extensions. It supports RocksDB and LevelDB backends, a plugin system (vector search, embeddings, LLMs, files, caching, monitoring, backup), and both CLI and HTTP interfaces.
 
-[![PyPI version](https://badge.fury.io/py/liath.svg)](https://badge.fury.io/py/liath)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[PyPI](https://pypi.org/project/liath/) • [License: MIT](LICENSE)
 
-## ✨ Key Features
+## Features
 
-Liath comes packed with powerful features to help you build AI-powered applications. Here's a quick overview:
+- Storage backends: RocksDB, LevelDB
+- Lua query execution via `lupa`
+- Plugin system (vector DB, embeddings, LLM, files, caching, monitoring, backup)
+- Namespaces with per-namespace LuaRocks module trees
+- CLI and HTTP server
 
-- 🔌 **Pluggable Storage**: Choose between RocksDB and LevelDB
-- 📝 **Lua Query Language**: Write powerful queries with familiar syntax
-- 🧩 **Plugin Architecture**: Extend functionality with custom plugins
-- 🔍 **Vector Search**: Built-in vector database capabilities
-- 🤖 **AI Integration**: Direct access to language models
-- 📊 **Embedding Generation**: Create and manage text embeddings
-- 📁 **File Operations**: Built-in file storage and retrieval
-- 🏷️ **Namespaces**: Isolate data and operations
-- 💾 **Transaction Support**: ACID compliant (RocksDB)
-- 🔐 **User Authentication**: Secure user management
-- 🌐 **CLI & HTTP API**: Multiple ways to interact
-- 💾 **Backup & Restore**: Keep your data safe
-- ⚡ **Query Caching**: Optimize performance
-- 📈 **Monitoring**: Track system performance
-- 🔄 **Connection Pooling**: Handle high concurrency
+For details, see docs/features.md.
 
-> 📚 For detailed information about each feature, check out our [Features Documentation](FEATURES.md)
+## Installation
 
-## 🛠️ Installation
-
-### As a Library
+Using pip:
 ```bash
 pip install liath
 ```
 
-### From Source
-1. **Prerequisites**
-   - Python 3.11 or higher
-   - Poetry package manager
+Optional extras:
+- LLM: `pip install liath[llm]`
+- Embeddings: `pip install liath[embed]`
+- Vector DB: `pip install liath[vdb]`
 
-2. **Install Poetry**
-   ```bash
-   pip install poetry
-   ```
+From source with Poetry:
+```bash
+git clone https://github.com/nudgelang/liath.git
+cd liath
+poetry install
+```
 
-3. **Clone & Setup**
-   ```bash
-   git clone https://github.com/nudgelang/liath.git
-   cd liath
-   poetry install
-   ```
+Create directories used by LuaRocks per namespace:
+```bash
+mkdir -p data/namespaces/default/{share/lua,lib/lua} plugins
+```
 
-4. **Create Directory Structure**
-   ```bash
-   mkdir -p data/default/{files,luarocks} plugins
-   ```
+Install common LuaRocks packages (optional):
+```bash
+./liath/setup_luarocks.sh
+```
 
-5. **Install Lua Dependencies**
-   ```bash
-   ./liath/setup_luarocks.sh
-   ```
+## Usage
 
-## 📦 Usage
-
-### As a Library (Embedded Mode)
+Embedded (Python):
 ```python
 from liath import EmbeddedLiath
 
-# Create an embedded database instance
 db = EmbeddedLiath(data_dir="./my_data", storage_type="auto")
-
-# Basic operations
 db.put("key", "value")
-retrieved_value = db.get("key")
-print(retrieved_value)  # Output: value
-
-# Execute Lua queries
-result = db.execute_lua('return db:get("key")')
-print(result)  # Output: value
-
-# Switch namespaces
-db.set_namespace("my_namespace")
-db.put("namespaced_key", "namespaced_value")
-
-# Close the database when done
+print(db.get("key"))
+print(db.execute_lua('return db:get("key")'))
+db.set_namespace("my_ns")
 db.close()
 ```
 
-### CLI Mode
+CLI:
 ```bash
 liath-cli --storage auto
 ```
 
-### Server Mode
+Server:
 ```bash
 liath-server --storage auto --host 0.0.0.0 --port 5000
 ```
 
-### Basic Operations
+### LuaRocks modules
 
+Liath searches for Lua modules in:
+- User tree: `~/.luarocks`
+- Namespace tree: `./data/namespaces/<namespace>/{share,lib}/lua/<version>`
+
+Install into a namespace tree:
+```bash
+luarocks install --tree=./data/namespaces/<namespace> package_name
+```
+
+Use in queries:
 ```lua
--- Create user and login
-create_user username password
-login username password
-
--- Create and use namespace
-create_namespace my_namespace
-use my_namespace
-
--- Basic queries
-query return db:put("key", "value")
-query return db:get("key")
+local json = require("cjson")
+return json.encode({key = "value"})
 ```
 
-## 📦 Using LuaRocks Packages
+## Extending with Plugins
 
-Liath supports LuaRocks packages in your queries. Here's how:
+Create a plugin by subclassing `liath.plugin_base.PluginBase` and returning a Lua interface (a table of functions) from `get_lua_interface()`. Place plugins in your own directory and point `Database(..., plugins_dir=...)` to it, or use the packaged plugins under `liath/plugins`.
 
-1. **Install a Package**
-   ```bash
-   luarocks install --tree=./data/namespaces/your_namespace package_name
-   ```
+## Documentation
 
-2. **Use in Queries**
-   ```lua
-   local json = db:require("cjson")
-   return json.encode({key = "value"})
-   ```
+- Features: docs/features.md
+- Roadmap/TODO: docs/todo.md
+- Assessment: docs/assessment.md
+- Package notes: docs/library-transformation.md
 
-### Example: HTTP Requests with LuaSocket
+## Case Studies: AI Agents and Workflows
 
-```lua
-local http = db:require("socket.http")
-local body, code = http.request("http://example.com")
-return {body = body, status_code = code}
-```
+- Retrieval-augmented answering (RAG)
+  - Ingest: embed text and add to a vector index.
+  - Retrieve: search similar items by query embedding.
+  - Generate: call an LLM with retrieved context.
+  - Example (Lua, assumes `embed`, `vdb`, and `llm` plugins available):
+    ```lua
+    -- 1) Ensure index exists
+    if not plugins.vdb then return { error = 'vdb plugin not available' } end
+    plugins.vdb.vdb_create_index(384)  -- dims depend on model
 
-## 🔄 Storage Options
+    -- 2) Add a document
+    local doc_id, text = 'doc:1', 'Streaming databases support high-ingest analytics.'
+    local e = plugins.embed.embed(text)  -- returns JSON; keep simple for illustration
+    -- store original text alongside
+    db:put(doc_id, text)
+    -- add vector to index (assumes you decode to a Lua table in your flow)
+    -- plugins.vdb.vdb_add(doc_id, embedding)
 
-Choose your storage backend based on your needs:
+    -- 3) Query
+    local q = 'How do streaming DBs handle ingestion?'
+    local qe = plugins.embed.embed(q)
+    -- local matches = plugins.vdb.vdb_search(qe, 3)  -- returns nearest IDs
 
-| Feature | RocksDB | LevelDB |
-|---------|---------|---------|
-| Performance | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| Transactions | ✅ | ❌ |
-| Column Families | ✅ | ❌ |
-| Complexity | Medium | Low |
+    -- 4) Construct a prompt from retrieved docs and ask the LLM
+    -- local ctx = db:get('doc:1')
+    -- return plugins.llm.llm_chat({ {role='user', content='Use context: '..ctx..'\nQuestion: '..q } })
+    return 'RAG pipeline outline complete'
+    ```
 
-## 🔧 API Reference
+- Tool-using agent (files + key–value + HTTP)
+  - The agent reads input files, stores metadata in the KV store, optionally calls HTTP, and writes results.
+  - Example (Lua):
+    ```lua
+    if not plugins.file then return { error = 'file plugin not available' } end
+    local content = plugins.file.file_read('notes/todo.txt') or ''
+    db:put('last_todo', content)
+    -- Optional HTTP call via LuaSocket (installed via LuaRocks)
+    -- local http = require('socket.http')
+    -- local body, code = http.request('https://example.com/api')
+    plugins.file.file_write('notes/summary.txt', 'Synced. Length: '..#content)
+    return { ok = true }
+    ```
 
-### EmbeddedLiath Class
+- Batch embedding workflow
+  - Periodically embed new items and update the vector index; simple job orchestration can be done from Python.
+  - Example (Python):
+    ```python
+    from liath import EmbeddedLiath
+    db = EmbeddedLiath(data_dir='./data', storage_type='auto')
+    db.set_namespace('prod')
 
-The `EmbeddedLiath` class provides a Pythonic interface for interacting with the database.
+    items = [
+        ('doc:2', 'Liath provides a Lua-based query surface.'),
+        ('doc:3', 'LevelDB is a lightweight KV store.'),
+    ]
+    for k, v in items:
+        db.put(k, v)
+        db.execute_lua(f"plugins.embed.embed('{v}')")  # embed, then add to index in your flow
+    db.execute_lua("plugins.vdb.vdb_create_index(384)")
+    # db.execute_lua("plugins.vdb.vdb_add('doc:2', <vector>)")
+    db.close()
+    ```
 
-#### Constructor
-```python
-db = EmbeddedLiath(data_dir="./data", storage_type="auto")
-```
+## Contributing
 
-Parameters:
-- `data_dir` (str): Directory to store database files
-- `storage_type` (str): Storage backend ('auto', 'rocksdb', or 'leveldb')
+Issues and pull requests are welcome.
 
-#### Methods
+## License
 
-##### `put(key, value)`
-Store a key-value pair in the database.
-
-##### `get(key)`
-Retrieve a value from the database.
-
-##### `delete(key)`
-Delete a key-value pair from the database.
-
-##### `execute_lua(query)`
-Execute a Lua query.
-
-##### `set_namespace(namespace)`
-Switch to a different namespace.
-
-##### `create_user(username, password)`
-Create a new user.
-
-##### `authenticate_user(username, password)`
-Authenticate a user.
-
-##### `list_namespaces()`
-List all namespaces.
-
-##### `close()`
-Close the database connection.
-
-### Direct Database Access
-
-For more advanced usage, you can access the underlying `Database` class directly:
-
-```python
-from liath import Database
-
-db = Database(data_dir="./data", storage_type="auto")
-# ... use database methods directly
-```
-
-## 🧩 Extending Liath
-
-Create custom plugins by:
-1. Adding a new Python file in `plugins/`
-2. Inheriting from `PluginBase`
-3. Implementing required methods
-
-### Example Plugin
-```python
-from liath.plugin_base import PluginBase
-
-class MyPlugin(PluginBase):
-    @property
-    def name(self):
-        return "myplugin"
-
-    def initialize(self, context):
-        self.namespace = context['namespace']
-
-    def get_lua_interface(self):
-        return {
-            'my_function': self.lua_callable(self.my_function)
-        }
-
-    def my_function(self, arg1, arg2):
-        # Your plugin logic here
-        return f"Processed {arg1} and {arg2}"
-```
-
-## 📦 Using LuaRocks Packages
-
-Liath supports LuaRocks packages in your queries. Here's how:
-
-1. **Install a Package**
-   ```bash
-   luarocks install --tree=./data/namespaces/your_namespace package_name
-   ```
-
-2. **Use in Queries**
-   ```lua
-   local json = db:require("cjson")
-   return json.encode({key = "value"})
-   ```
-
-### Example: HTTP Requests with LuaSocket
-
-```lua
-local http = db:require("socket.http")
-local body, code = http.request("http://example.com")
-return {body = body, status_code = code}
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Feel free to:
-- Submit pull requests
-- Report bugs
-- Suggest features
-- Improve documentation
-
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE) for details.
+MIT — see LICENSE.

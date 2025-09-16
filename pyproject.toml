@@ -22,16 +22,15 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
 pyyaml = "^6.0.1"
-llama-cpp-python = "^0.2.85"
-openai = "^1.40.0"
-pandas = "^2.2.2"
-fastembed = "^0.3.4"
 psutil = "^6.0.0"
-usearch = "^2.13.0"
 flask-smorest = "^0.44.0"
-pytest = "^8.4.1"
 lupa = "^2.5"
 plyvel = "^1.5.1"
+openai = {version = "^1.40.0", optional = true}
+llama-cpp-python = {version = "^0.2.85", optional = true}
+fastembed = {version = "^0.3.4", optional = true}
+pandas = {version = "^2.2.2", optional = true}
+usearch = {version = "^2.13.0", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.4.1"
@@ -46,3 +45,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.extras]
 rocksdb = ["rocksdb"]
+llm = ["openai", "llama-cpp-python"]
+embed = ["fastembed", "pandas"]
+vdb = ["usearch"]

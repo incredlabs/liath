@@ -1,9 +1,5 @@
 from flask import Flask, request, jsonify
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-
-from database import Database
+from .database import Database
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -12,8 +8,8 @@ import argparse
 app = Flask(__name__)
 executor = ThreadPoolExecutor(max_workers=20)  # Adjust the number of workers as needed
 
-def create_app(storage_type='auto'):
-    db = Database(storage_type=storage_type)
+def create_app(storage_type='auto', data_dir='./data', plugins_dir=None):
+    db = Database(storage_type=storage_type, data_dir=data_dir, plugins_dir=plugins_dir)
     app.config['db'] = db
     return app
 
@@ -75,11 +71,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Liath Database Server")
     parser.add_argument('--storage', choices=['auto', 'rocksdb', 'leveldb'], default='auto',
                         help="Specify the storage backend to use")
+    parser.add_argument('--data-dir', default='./data', help="Specify the data directory")
+    parser.add_argument('--plugins-dir', default=None, help="Specify an additional plugins directory")
     parser.add_argument('--host', default='0.0.0.0', help="Specify the host to run the server on")
     parser.add_argument('--port', type=int, default=5000, help="Specify the port to run the server on")
     args = parser.parse_args()
 
-    app = create_app(storage_type=args.storage)
+    app = create_app(storage_type=args.storage, data_dir=args.data_dir, plugins_dir=args.plugins_dir)
     server_thread = threading.Thread(target=run_server, args=(args.host, args.port))
     server_thread.start()
     print(f"Server is running on http://{args.host}:{args.port}")

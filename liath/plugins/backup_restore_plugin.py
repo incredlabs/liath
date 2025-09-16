@@ -2,7 +2,7 @@ import os
 import shutil
 import json
 from datetime import datetime
-from plugin_base import PluginBase
+from liath.plugin_base import PluginBase
 
 class BackupRestorePlugin(PluginBase):
     def initialize(self, context):

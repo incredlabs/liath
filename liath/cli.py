@@ -1,9 +1,5 @@
 import cmd
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-
-from database import Database
+from .database import Database
 import json
 import yaml
 import argparse
@@ -12,9 +8,9 @@ class DatabaseCLI(cmd.Cmd):
     intro = "Welcome to the Liath Database CLI. Type help or ? to list commands.\n"
     prompt = "(liath) "
 
-    def __init__(self, storage_type='auto'):
+    def __init__(self, storage_type='auto', data_dir='./data', plugins_dir=None):
         super().__init__()
-        self.db = Database(storage_type=storage_type)
+        self.db = Database(storage_type=storage_type, data_dir=data_dir, plugins_dir=plugins_dir)
         self.current_namespace = 'default'
         self.username = None
         self.return_format = 'dict'
