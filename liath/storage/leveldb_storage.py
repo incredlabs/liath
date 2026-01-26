@@ -1,7 +1,35 @@
+"""
+LevelDB storage backend implementation.
+
+Provides a lightweight key-value storage using LevelDB via plyvel.
+"""
+
 import plyvel
 from .base import StorageBase
 
+
 class LevelDBStorage(StorageBase):
+    """LevelDB storage backend for Liath.
+
+    A lightweight storage backend using LevelDB. Good for development
+    and smaller datasets. Column families are emulated using key prefixes.
+
+    Args:
+        path: Path to the database directory.
+        options: Optional configuration (unused, for API compatibility).
+
+    Attributes:
+        db: The underlying plyvel.DB instance.
+        column_families: Dict mapping CF names to prefixed DB instances.
+
+    Example:
+        >>> storage = LevelDBStorage('./data/mydb')
+        >>> storage.put('key', 'value')
+        >>> storage.get('key')
+        'value'
+        >>> storage.close()
+    """
+
     def __init__(self, path, options=None):
         self.db = plyvel.DB(path, create_if_missing=True)
         self.column_families = {}

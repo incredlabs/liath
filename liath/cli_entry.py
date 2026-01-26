@@ -6,6 +6,8 @@ This module provides a command-line interface for interacting with the Liath dat
 """
 
 import argparse
+import sys
+
 from liath import DatabaseCLI
 
 

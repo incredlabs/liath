@@ -1,11 +1,51 @@
+"""
+RocksDB storage backend implementation.
+
+Provides high-performance key-value storage using RocksDB with
+advanced features like column families, transactions, and compression.
+"""
+
 try:
     import rocksdb
-except:
-    print("Please install the 'rocksdb' package")
-    
+except ImportError as e:
+    raise ImportError(
+        "RocksDB backend requires the 'rocksdb' package. "
+        "Install with: pip install liath[rocksdb]"
+    ) from e
+
 from .base import StorageBase
 
+
 class RocksDBStorage(StorageBase):
+    """RocksDB storage backend for Liath.
+
+    A high-performance storage backend using RocksDB. Provides advanced
+    features including native column families, LZ4 compression, bloom
+    filters, and block caching.
+
+    Args:
+        path: Path to the database directory.
+        options: Optional RocksDB Options object. If None, uses optimized
+            defaults with:
+            - LZ4 compression
+            - Bloom filters (10 bits per key)
+            - 2GB block cache
+            - 64MB write buffers
+
+    Attributes:
+        db: The underlying rocksdb.DB instance.
+        column_families: Dict mapping CF names to CF handles.
+
+    Example:
+        >>> storage = RocksDBStorage('./data/mydb')
+        >>> storage.put('key', 'value')
+        >>> storage.get('key')
+        'value'
+        >>> storage.create_column_family('users')
+        >>> storage.put_cf('users', 'alice', 'data')
+        >>> storage.close()
+    """
+
     def __init__(self, path, options=None):
         if options is None:
             opts = rocksdb.Options()

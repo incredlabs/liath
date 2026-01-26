@@ -1,3 +1,10 @@
+"""
+HTTP REST API server for Liath database.
+
+This module provides a Flask-based HTTP server with endpoints for
+authentication, namespace management, and query execution.
+"""
+
 from flask import Flask, request, jsonify
 from .database import Database
 import threading
@@ -6,14 +13,37 @@ import json
 import argparse
 
 app = Flask(__name__)
-executor = ThreadPoolExecutor(max_workers=20)  # Adjust the number of workers as needed
+executor = ThreadPoolExecutor(max_workers=20)
+
 
 def create_app(storage_type='auto', data_dir='./data', plugins_dir=None):
+    """Create and configure the Flask application.
+
+    Args:
+        storage_type: Storage backend ('auto', 'rocksdb', 'leveldb').
+        data_dir: Path to the data directory.
+        plugins_dir: Optional path to custom plugins directory.
+
+    Returns:
+        Configured Flask application instance.
+    """
     db = Database(storage_type=storage_type, data_dir=data_dir, plugins_dir=plugins_dir)
     app.config['db'] = db
     return app
 
+
 def execute_query(namespace, query):
+    """Execute a Lua query and return JSON result.
+
+    Internal helper function used by the /query endpoint.
+
+    Args:
+        namespace: The namespace to execute the query in.
+        query: Lua code to execute.
+
+    Returns:
+        JSON string with the query result or error message.
+    """
     db = app.config['db']
     try:
         result = db.execute_query(namespace, query)
@@ -28,6 +58,14 @@ def execute_query(namespace, query):
 
 @app.route('/login', methods=['POST'])
 def login():
+    """Authenticate a user.
+
+    POST /login
+    Body: {"username": "...", "password": "..."}
+
+    Returns:
+        JSON with status "success" or "error".
+    """
     data = request.json
     db = app.config['db']
     if db.authenticate_user(data['username'], data['password']):
@@ -37,6 +75,14 @@ def login():
 
 @app.route('/create_user', methods=['POST'])
 def create_user():
+    """Create a new user account.
+
+    POST /create_user
+    Body: {"username": "...", "password": "..."}
+
+    Returns:
+        JSON with status "success" or "error".
+    """
     data = request.json
     db = app.config['db']
     try:
@@ -47,6 +93,14 @@ def create_user():
 
 @app.route('/query', methods=['POST'])
 def query():
+    """Execute a Lua query.
+
+    POST /query
+    Body: {"namespace": "...", "query": "..."}
+
+    Returns:
+        JSON with query result or error.
+    """
     data = request.json
     future = executor.submit(execute_query, data['namespace'], data['query'])
     result = future.result()
@@ -54,6 +108,14 @@ def query():
 
 @app.route('/create_namespace', methods=['POST'])
 def create_namespace():
+    """Create a new namespace.
+
+    POST /create_namespace
+    Body: {"namespace": "..."}
+
+    Returns:
+        JSON with status "success".
+    """
     data = request.json
     db = app.config['db']
     db.create_namespace(data['namespace'])
@@ -61,10 +123,24 @@ def create_namespace():
 
 @app.route('/list_namespaces', methods=['GET'])
 def list_namespaces():
+    """List all available namespaces.
+
+    GET /list_namespaces
+
+    Returns:
+        JSON with status and list of namespace names.
+    """
     db = app.config['db']
     return jsonify({"status": "success", "namespaces": db.list_namespaces()})
 
+
 def run_server(host='0.0.0.0', port=5000):
+    """Start the HTTP server.
+
+    Args:
+        host: Host address to bind to. Defaults to '0.0.0.0'.
+        port: Port number to listen on. Defaults to 5000.
+    """
     app.run(host=host, port=port, threaded=True)
 
 if __name__ == '__main__':

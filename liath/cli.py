@@ -1,10 +1,39 @@
+"""
+Command-line interface for Liath database.
+
+This module provides an interactive CLI for database operations,
+authentication, and Lua query execution.
+"""
+
 import cmd
 from .database import Database
 import json
 import yaml
 import argparse
 
+
 class DatabaseCLI(cmd.Cmd):
+    """Interactive command-line interface for Liath database.
+
+    Provides commands for authentication, namespace management,
+    and Lua query execution with configurable output formats.
+
+    Args:
+        storage_type: Storage backend ('auto', 'rocksdb', 'leveldb').
+        data_dir: Path to the data directory.
+        plugins_dir: Optional path to custom plugins directory.
+
+    Attributes:
+        db: The Database instance.
+        current_namespace: Currently active namespace.
+        username: Authenticated username (None if not logged in).
+        return_format: Output format for query results.
+
+    Example:
+        >>> cli = DatabaseCLI(storage_type='auto', data_dir='./data')
+        >>> cli.cmdloop()  # Starts interactive session
+    """
+
     intro = "Welcome to the Liath Database CLI. Type help or ? to list commands.\n"
     prompt = "(liath) "
 

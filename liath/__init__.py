@@ -9,12 +9,18 @@ This package provides:
 - AI integration capabilities
 """
 
+from importlib.metadata import version, PackageNotFoundError
+
 from .database import Database
 from .cli import DatabaseCLI
 from .cli_entry import main as cli_main
 from .server import create_app, run_server
 from .embedded import EmbeddedLiath, create_embedded_liath
 
-__version__ = "0.1.0"
+try:
+    __version__ = version("liath")
+except PackageNotFoundError:
+    __version__ = "0.1.0"  # Fallback for development
+
 __author__ = "Dipankar Sarkar"
 __email__ = "me@dipankar.name"
