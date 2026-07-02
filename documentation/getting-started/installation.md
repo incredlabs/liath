@@ -78,7 +78,7 @@ poetry add liath[embed,vdb,llm]
 To install from source for development:
 
 ```bash
-git clone https://github.com/skelf-research/liath.git
+git clone https://github.com/incredlabs/liath.git
 cd liath
 poetry install
 

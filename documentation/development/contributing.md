@@ -8,7 +8,7 @@ Thank you for your interest in contributing to Liath!
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/skelf-research/liath.git
+   git clone https://github.com/incredlabs/liath.git
    cd liath
    ```
 

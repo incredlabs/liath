@@ -1,11 +1,15 @@
 # Liath
 
-**A programmable database that speaks Lua. Store data, run queries, build AI workflows.**
+**The SQLite for AI agents.** Programmable memory that agents query with sandboxed Lua — key-value storage, embeddings, and vector search in a single Python dependency. Store data, run queries, and build AI workflows without standing up a server.
 
 [![PyPI version](https://img.shields.io/pypi/v/liath.svg)](https://pypi.org/project/liath/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://docs.skelfresearch.com/liath)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://docs.incredlabs.com/liath)
+
+**[Website](https://liath.incredlabs.com) · [Documentation](https://docs.incredlabs.com/liath) · [ORMDB (sibling project)](https://ormdb.incredlabs.com)**
+
+> Also available as a Rust crate: [**liath-rs**](https://github.com/incredlabs/liath-rs).
 
 ---
 
@@ -238,21 +242,21 @@ Load with: `Database(data_dir="./data", plugins_dir="./my_plugins")`
 
 ## Documentation
 
-Full documentation available at the [documentation site](https://docs.skelfresearch.com/liath):
+Full documentation available at the [documentation site](https://docs.incredlabs.com/liath):
 
-- [Installation Guide](https://docs.skelfresearch.com/liath/getting-started/installation/)
-- [Quick Start Tutorial](https://docs.skelfresearch.com/liath/getting-started/quickstart/)
-- [Lua Query Guide](https://docs.skelfresearch.com/liath/tutorials/lua-queries/)
-- [Plugin Reference](https://docs.skelfresearch.com/liath/plugins/overview/)
-- [API Reference](https://docs.skelfresearch.com/liath/reference/api/)
+- [Installation Guide](https://docs.incredlabs.com/liath/getting-started/installation/)
+- [Quick Start Tutorial](https://docs.incredlabs.com/liath/getting-started/quickstart/)
+- [Lua Query Guide](https://docs.incredlabs.com/liath/tutorials/lua-queries/)
+- [Plugin Reference](https://docs.incredlabs.com/liath/plugins/overview/)
+- [API Reference](https://docs.incredlabs.com/liath/reference/api/)
 
 ## Contributing
 
-Contributions welcome! See [CONTRIBUTING](https://docs.skelfresearch.com/liath/development/contributing/) for guidelines.
+Contributions welcome! See [CONTRIBUTING](https://docs.incredlabs.com/liath/development/contributing/) for guidelines.
 
 ```bash
 # Development setup
-git clone https://github.com/skelf-research/liath.git
+git clone https://github.com/incredlabs/liath.git
 cd liath
 poetry install --with docs
 poetry run pytest
@@ -264,6 +268,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-<p align="center">
-  <b>Built for developers who want databases to do more.</b>
-</p>
+**Part of the [incredlabs](https://www.incredlabs.com) data platform** — Rust-native infrastructure for AI.
+
+- **Liath** — the SQLite for AI agents · [liath.incredlabs.com](https://liath.incredlabs.com) · Rust crate: [liath-rs](https://github.com/incredlabs/liath-rs)
+- **ORMDB** — the database that speaks ORM natively · [ormdb.incredlabs.com](https://ormdb.incredlabs.com) · [GitHub](https://github.com/incredlabs/ormdb)
+- Website: [www.incredlabs.com](https://www.incredlabs.com) · Contact: [contact@incredlabs.com](mailto:contact@incredlabs.com)
