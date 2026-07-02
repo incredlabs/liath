@@ -1,8 +1,8 @@
 site_name: Liath Documentation
 site_description: A programmable key-value database with Lua query language and AI capabilities
-site_url: https://docs.skelfresearch.com/liath
-repo_url: https://github.com/skelf-research/liath
-repo_name: skelf-research/liath
+site_url: https://docs.incredlabs.com/liath
+repo_url: https://github.com/incredlabs/liath
+repo_name: incredlabs/liath
 
 docs_dir: documentation
 
@@ -109,6 +109,6 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/skelf-research/liath
+      link: https://github.com/incredlabs/liath
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/liath/
